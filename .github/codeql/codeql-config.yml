@@ -8,7 +8,7 @@ paths:
   - src/main/java
 
 paths-ignore:
-  - src/test/**
-  - target/**
-  - **/generated/**
-  - **/build/**
+  - "src/test/**"
+  - "target/**"
+  - "**/generated/**"
+  - "**/build/**"
