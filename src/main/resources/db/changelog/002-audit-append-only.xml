@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.22.xsd">
+
+  <changeSet id="002-1-func" author="pws">
+    <sql splitStatements="false">
+      <![CDATA[
+      CREATE OR REPLACE FUNCTION raise_audit_log_exception()
+      RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'audit_log is append-only';
+      END;
+      $$ LANGUAGE plpgsql;
+      ]]>
+    </sql>
+  </changeSet>
+
+  <changeSet id="002-2-trigger" author="pws">
+    <sql>
+      <![CDATA[
+      DROP TRIGGER IF EXISTS prevent_update_audit_log ON audit_log;
+      CREATE TRIGGER prevent_update_audit_log
+      BEFORE UPDATE OR DELETE ON audit_log
+      FOR EACH ROW EXECUTE FUNCTION raise_audit_log_exception();
+      ]]>
+    </sql>
+  </changeSet>
+</databaseChangeLog>

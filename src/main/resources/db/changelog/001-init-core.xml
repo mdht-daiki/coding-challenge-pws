@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="
+                      http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.22.xsd">
+  <changeSet id="001-1-users" author="pws">
+    <createTable tableName="users">
+      <column name="id" type="uuid">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="login_id" type="varchar(100)">
+        <constraints nullable="false" unique="true"/>
+      </column>
+      <column name="name" type="varchar(200)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="role" type="varchar(50)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="department" type="varchar(100)"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="001-2-requests" author="pws">
+    <createTable tableName="requests">
+      <column name="id" type="uuid">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="applicant_id" type="uuid">
+        <constraints nullable="false"/>
+      </column>
+      <column name="status" type="varchar(30)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="total_amount" type="numeric(18,2)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="submitted_at" type="timestamp with time zone"/>
+    </createTable>
+    <createIndex tableName="requests" indexName="idx_requests_status">
+      <column name="status"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="001-2a-requests-fk" author="pws">
+    <addForeignKeyConstraint baseColumnNames="applicant_id" baseTableName="requests"
+                             referencedColumnNames="id" referencedTableName="users"
+                             constraintName="fk_requests_applicant"/>
+  </changeSet>
+
+  <changeSet id="001-3-request_items" author="pws">
+    <createTable tableName="request_items">
+      <column name="id" type="uuid">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="request_id" type="uuid">
+        <constraints nullable="false"/>
+      </column>
+      <column name="sku_id" type="varchar(100)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="qty" type="int">
+        <constraints nullable="false"/>
+      </column>
+      <column name="price" type="numeric(18,2)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <createIndex tableName="request_items" indexName="idx_items_request">
+      <column name="request_id"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="001-3a-request_items-fk" author="pws">
+    <addForeignKeyConstraint baseTableName="request_items" baseColumnNames="request_id"
+                             constraintName="fk_items_request" referencedTableName="requests"
+                             referencedColumnNames="id"/>
+  </changeSet>
+
+  <changeSet id="001-4-audit_log" author="pws">
+    <createTable tableName="audit_log">
+      <column name="id" type="bigserial">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="occurred_at" type="timestamp with time zone">
+        <constraints nullable="false"/>
+      </column>
+      <column name="actor_id" type="uuid"/>
+      <column name="action" type="varchar(100)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="target_table" type="varchar(100)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="target_id" type="varchar(100)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="hash" type="varchar(64)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="prev_hash" type="varchar(64)"/>
+    </createTable>
+    <createIndex tableName="audit_log" indexName="idx_audit_time">
+      <column name="occurred_at"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="001-4a-audit_log-fk" author="pws">
+    <addForeignKeyConstraint baseTableName="audit_log" baseColumnNames="actor_id"
+                             constraintName="fk_audit_actor" referencedTableName="users"
+                             referencedColumnNames="id"/>
+  </changeSet>
+
+  <changeSet id="001-5-worm_manifest" author="pws">
+    <createTable tableName="worm_manifest">
+      <column name="id" type="bigserial">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="audit_log_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="s3_object_key" type="varchar(300)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="checksum" type="varchar(64)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="001-5a-worm_manifest-fk" author="pws">
+    <addForeignKeyConstraint baseTableName="worm_manifest" baseColumnNames="audit_log_id"
+                             constraintName="fk_worm_audit" referencedTableName="audit_log"
+                             referencedColumnNames="id"/>
+  </changeSet>
+
+</databaseChangeLog>
