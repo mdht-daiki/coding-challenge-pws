@@ -1,0 +1,14 @@
+name: "pws-codeql-config"
+
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+paths:
+  - src/main/java
+
+paths-ignore:
+  - "src/test/**"
+  - "target/**"
+  - "**/generated/**"
+  - "**/build/**"
