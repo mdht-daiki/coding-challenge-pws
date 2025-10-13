@@ -2,6 +2,8 @@ package com.example.procurement.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,9 +14,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private Map<String, Object> base(HttpStatus status, String message, String path) {
         Map<String, Object> m = new HashMap<>();
@@ -48,9 +53,10 @@ public class GlobalExceptionHandler {
                                                                          HttpServletRequest req) {
         var body = base(HttpStatus.BAD_REQUEST, "Constraint violation", req.getRequestURI());
         body.put("details", ex.getConstraintViolations().stream()
-                .collect(HashMap::new,
-                        (map, v) -> map.put(v.getPropertyPath().toString(), v.getMessage()),
-                        HashMap::putAll));
+                .collect(Collectors.toMap(
+                        v -> v.getPropertyPath().toString(),
+                        v -> v.getMessage()
+                )));
         return ResponseEntity.badRequest().body(body);
     }
 
@@ -63,6 +69,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleOther(Exception ex, HttpServletRequest req) {
+        log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
         var body = base(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error", req.getRequestURI());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
