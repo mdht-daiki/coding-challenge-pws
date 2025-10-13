@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -34,8 +36,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex,
                                                                 HttpServletRequest req) {
-        var details = new HashMap<String, String>();
-        ex.getBindingResult().getFieldErrors().forEach(fe -> details.put(fe.getField(), fe.getDefaultMessage()));
+        var details = new HashMap<String, List<String>>();
+        ex.getBindingResult().getFieldErrors().forEach(fe ->
+                details.computeIfAbsent(fe.getField(), k -> new ArrayList<>()).add(fe.getDefaultMessage()));
         var body = base(HttpStatus.BAD_REQUEST, "Validation failed", req.getRequestURI());
         body.put("details", details);
         return ResponseEntity.badRequest().body(body);
@@ -55,7 +58,8 @@ public class GlobalExceptionHandler {
         body.put("details", ex.getConstraintViolations().stream()
                 .collect(Collectors.toMap(
                         v -> v.getPropertyPath().toString(),
-                        v -> v.getMessage()
+                        v -> v.getMessage(),
+                        (existing, replacement) -> existing + "; " + replacement
                 )));
         return ResponseEntity.badRequest().body(body);
     }
