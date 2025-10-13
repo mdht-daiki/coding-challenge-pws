@@ -12,6 +12,7 @@ spring:
         jdbc.time_zone: UTC
   liquibase:
     change-log: classpath:db/changelog/changelog-master.xml
+    contexts: dev
 
 
 server:
