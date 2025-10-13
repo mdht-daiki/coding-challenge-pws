@@ -54,4 +54,26 @@ public class RequestControllerTest {
                 .andExpect(jsonPath("$.id").value(reqId.toString()))
                 .andExpect(jsonPath("$.status").value("SUBMITTED"));
     }
+
+    @Test
+    void create_validationError_onQtyZero() throws Exception {
+
+        var actor = UUID.randomUUID().toString();
+
+        var json = """
+                {
+                    "applicantId": "%s",
+                    "items": [{"skuId":"A-001","qty":0,"price":1000.00}],
+                    "totalAmount": 2000.00
+                }
+                """.formatted(actor);
+        mvc.perform(post("/api/requests")
+                        .header("X-Actor-Id", actor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details").exists())
+                .andExpect(jsonPath("$.details['items[0].qty']").value("must be greater than or equal to 1"));
+    }
+
 }

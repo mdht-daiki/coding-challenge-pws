@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="
+      http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+  <!-- 開発専用シード。prod には適用しない -->
+  <changeSet id="003-1-dev-seed-users" author="pws">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="users"/>
+    </preConditions>
+
+    <sql splitStatements="false">
+      <![CDATA[
+      INSERT INTO users (id, login_id, name, role, department) VALUES
+        ('22222222-2222-2222-2222-222222222222','demo.user','デモ太郎','STAFF','総務課')
+      ON CONFLICT (id) DO NOTHING;
+
+      INSERT INTO users (id, login_id, name, role, department) VALUES
+        ('33333333-3333-3333-3333-333333333333','approver.user','承認 花子','APPROVER','管財課')
+      ON CONFLICT (id) DO NOTHING;
+
+      INSERT INTO users (id, login_id, name, role, department) VALUES
+        ('44444444-4444-4444-4444-444444444444','admin.user','管理 次郎','ADMIN','システム管理')
+      ON CONFLICT (id) DO NOTHING;
+      ]]>
+    </sql>
+
+    <rollback>
+      <sql>
+        <![CDATA[
+        DELETE FROM users WHERE id IN (
+          '22222222-2222-2222-2222-222222222222',
+          '33333333-3333-3333-3333-333333333333',
+          '44444444-4444-4444-4444-444444444444'
+        );
+        ]]>
+      </sql>
+    </rollback>
+  </changeSet>
+</databaseChangeLog>
