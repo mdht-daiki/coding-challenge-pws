@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -55,12 +54,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex,
                                                                          HttpServletRequest req) {
         var body = base(HttpStatus.BAD_REQUEST, "Constraint violation", req.getRequestURI());
-        body.put("details", ex.getConstraintViolations().stream()
-                .collect(Collectors.toMap(
-                        v -> v.getPropertyPath().toString(),
-                        v -> v.getMessage(),
-                        (existing, replacement) -> existing + "; " + replacement
-                )));
+        var details = new HashMap<String, List<String>>();
+        ex.getConstraintViolations().forEach(v ->
+                details.computeIfAbsent(v.getPropertyPath().toString(), k -> new ArrayList<>()).add(v.getMessage()));
+        body.put("details", details);
         return ResponseEntity.badRequest().body(body);
     }
 
