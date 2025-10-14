@@ -14,6 +14,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,7 +29,7 @@ public class RequestControllerTest {
     MockMvc mvc;
 
     @MockitoBean
-    RequestService service;
+    RequestService requestService;
 
     @Test
     void create_ok() throws Exception {
@@ -36,7 +39,7 @@ public class RequestControllerTest {
         saved.setId(reqId);
         saved.setStatus(RequestStatus.SUBMITTED);
 
-        Mockito.when(service.create(Mockito.any(), Mockito.any())).thenReturn(saved);
+        Mockito.when(requestService.create(Mockito.any(), Mockito.any())).thenReturn(saved);
 
         var json = """
                 {
@@ -74,6 +77,45 @@ public class RequestControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details").exists())
                 .andExpect(jsonPath("$.details['items[0].qty']").value("must be greater than or equal to 1"));
+    }
+
+    @Test
+    void approve_success_200_and_status_APPROVED() throws Exception {
+        var reqId = UUID.randomUUID();
+        var actor = UUID.randomUUID();
+
+        Mockito.when(requestService.approve(eq(reqId), eq(actor), any()))
+                .thenReturn("APPROVED");
+
+        var json = """
+                {"comment":"OK"}
+                """;
+
+        mvc.perform(patch("/api/requests/{id}/approve", reqId)
+                        .header("X-Actor-Id", actor.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(reqId.toString()))
+                .andExpect(jsonPath("$.status").value("APPROVED"));
+
+        Mockito.verify(requestService).approve(eq(reqId), eq(actor), eq("OK"));
+    }
+
+    @Test
+    void approve_twice_returns_409_conflict() throws Exception {
+        var reqId = UUID.randomUUID();
+        var actor = UUID.randomUUID();
+
+        Mockito.when(requestService.approve(eq(reqId), eq(actor), any()))
+                .thenThrow(new IllegalStateException("invalid status transition: APPROVED -> APPROVED"));
+
+        mvc.perform(patch("/api/requests/{id}/approve", reqId)
+                        .header("X-Actor-Id", actor.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"comment\":\"2nd\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("invalid status transition: APPROVED -> APPROVED"));
     }
 
 }
