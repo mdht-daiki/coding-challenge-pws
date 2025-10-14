@@ -19,6 +19,10 @@ public class AuditService {
     }
 
     public void audit(UUID actorId, String action, String targetTable, String targetId) {
+        audit(actorId, action, targetTable, targetId, null);
+    }
+
+    public void audit(UUID actorId, String action, String targetTable, String targetId, String comment) {
         var prev = auditLogRepository.findTopByOrderByIdDesc();
         var prevHash = prev == null ? null : prev.getHash();
 

@@ -58,4 +58,28 @@ public class RequestService {
 
         return saved;
     }
+
+    /**
+     * 購買申請を承認する（単段承認）
+     *
+     * @return 更新後のステータス文字列（例: "APPROVED"）
+     */
+    @Transactional
+    public String approve(UUID requestId, UUID actorId, String comment) {
+        var req = requestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("request not found: " + requestId));
+
+        if (req.getStatus() != RequestStatus.SUBMITTED) {
+            // 業務ルール：SUBMITTED 以外は承認不可
+            throw new IllegalStateException("invalid status transition: " + req.getStatus() + " -> APPROVED");
+        }
+
+        req.setStatus(RequestStatus.APPROVED);
+        // 必要なら承認日時・承認者・コメントの保持などをここで追加
+
+        requestRepository.save(req);
+        auditService.audit(actorId, "APPROVE", "requests", req.getId().toString(), comment);
+
+        return req.getStatus().name();
+    }
 }
